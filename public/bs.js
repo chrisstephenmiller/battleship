@@ -91,4 +91,4 @@ class Boat {
     }
 }
 
-const game = new Game(12, `peter`, `chris`, `john`)
+const game = new Game(15, `peter`, `chris`, `john`)
