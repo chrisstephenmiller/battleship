@@ -1,0 +1,35 @@
+body {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.boat {
+    background-color: rgb(182, 35, 35)
+}
+
+th, td {
+    white-space: pre-wrap;
+    border: 1px solid black;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+}
+
+span {
+    white-space: pre-wrap;
+    font-weight: bold;
+    margin: 5px;
+}
+
+#game {
+    display: inline-flex;
+}
+
+div {
+    border: 2px solid black;
+    margin: 5px;
+    padding: 3px;
+}
+
+.current-player {
+    color: blue
+}
