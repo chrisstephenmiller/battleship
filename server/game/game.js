@@ -11,7 +11,7 @@ class Game {
         if (gridCell.shot) return true
         else {
             gridCell.shot = this.round
-            this.players.forEach(player => player.boats.forEach(boat => boat.cells.forEach(boatCell => { if (boatCell.x == cell.x && boatCell.y == cell.y) boatCell.shot = gridCell.shot })))
+            this.players.forEach(player => player.boats.forEach(boat => boat.cells.forEach(boatCell => boatCell.x == cell.x && boatCell.y == cell.y && (boatCell.shot = gridCell.shot))))
         }
 
         const currentPlayer = this.players[this.currentPlayer]
@@ -22,7 +22,7 @@ class Game {
         else {
             this.players.forEach(player => {
                 player.shots = 0
-                player.boats.forEach(boat => { if (!boat.cells.every(cell => cell.shot)) player.shots += Math.min(player.boats.length - 1, boat.cells.length - 1) })
+                player.boats.forEach(boat => !boat.cells.every(cell => cell.shot) && (player.shots += Math.min(player.boats.length - 1, boat.cells.length - 1)))
             })
             this.round++
             this.currentPlayer++
@@ -82,12 +82,4 @@ class Boat {
     }
 }
 
-const game = new Game(15, `peter`, `chris`, `john`)
-game.players.forEach(player => game.placeRandomBoats(player))
-
-const fs = require('fs')
-fs.writeFileSync(`server/game/games/game.json`, JSON.stringify(game))
-
-module.exports = {
-    game
-}
+module.exports = Game

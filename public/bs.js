@@ -1,4 +1,4 @@
-const makeGame = async () => {
+const buildGame = async playerID => {
     const gameData = await axios.get(`game`)
     const game = gameData.data
 
@@ -20,7 +20,7 @@ const makeGame = async () => {
     // column (numbers) headers
     game.grid.forEach((row, i) => {
         eCreator(`th`, `num-${i}`, i, numberRow)
-        if (i === game.grid.length - 1) { eCreator(`th`, `num-${i + 1}`, i + 1, numberRow) }
+        i === game.grid.length - 1 && eCreator(`th`, `num-${i + 1}`, i + 1, numberRow)
     })
 
     game.grid.forEach((row, y) => {
@@ -39,18 +39,27 @@ const makeGame = async () => {
                 if (cell.shot) return
                 const gameTurn = await axios.put(`game/`, cell)
                 const { game, turn } = gameTurn.data
-                if (turn) {
-                    gridCell.innerHTML = game.round
-                }
+                const currentPlayer = game.players[game.currentPlayer]
+                const currentPlayerName = document.getElementById(`pn-${game.currentPlayer}`)
+                currentPlayerName.innerHTML = `${currentPlayer.name} - ${currentPlayer.shots}`
+                if (turn) !gridCell.innerHTML && (gridCell.innerHTML = game.round)
                 // end of turn
                 else {
+                    // currentPlayerName.innerHTML = `${currentPlayer.name} - ${currentPlayer.shots}`
                     gridCell.innerHTML = game.round - 1
-                    game.players.forEach((player, p) => player.boats.forEach((boat, b) => {
-                        boatShots = []
-                        boat.cells.forEach(boatCell => boatShots.push(boatCell.shot))
-                        boatShots.sort()
-                        boatShots.forEach((boatShot, c) => document.getElementById(`bc-${p}-${b}-${c}`).innerHTML = boatShot)
-                    }))
+                    game.players.forEach((player, p) => {
+                        const playerName = document.getElementById(`pn-${p}`)
+                        playerName.innerHTML = `${player.name} - ${player.shots}`
+                        playerName.classList.remove(`current-player`)
+                        currentPlayerName.classList.add(`current-player`)
+
+                        player.boats.forEach((boat, b) => {
+                            boatShots = []
+                            boat.cells.forEach(boatCell => boatShots.push(boatCell.shot))
+                            boatShots.sort()
+                            boatShots.forEach((boatShot, c) => document.getElementById(`bc-${p}-${b}-${c}`).innerHTML = boatShot)
+                        })
+                    })
                 }
             })
         })
@@ -61,18 +70,19 @@ const makeGame = async () => {
         // boats element
         const boats = document.getElementById(`boats`)
         // player names
-        eCreator(`span`, `pn-${p}`, `${player.name} - ${player.shots}`, boats)
+        const playerName = eCreator(`span`, `pn-${p}`, `${player.name} - ${player.shots}`, boats)
         // boat tables
         const boatTable = eCreator(`table`, `bt-${p}`, null, boats)
+        p === game.currentPlayer && playerName.classList.add(`current-player`)
 
         // boat reveal
-        for (let i = 0; i < 2; i++) {
-            boatTable.addEventListener([`mousedown`, `mouseup`][i], () => {
+        for (let i = 0; i < 3; i++) {
+            boatTable.addEventListener([`mousedown`, `mouseup`, `touchstart`, `touchend`][i], () => {
                 // limit to active player
                 // if (event.target.id.split(`-`)[1] == game.currentPlayer) {
                 player.boats.forEach(boat => boat.cells.forEach(cell => {
                     const boatCell = document.getElementById(`cell-${row_id(cell.x)}-${cell.y + 1}`)
-                    i === 0 ? boatCell.classList.add(`boat`) : boatCell.classList.remove(`boat`)
+                    i === 0 || i === 2 ? boatCell.classList.add(`boat`) : boatCell.classList.remove(`boat`)
                 }))
                 // }
             })
@@ -85,9 +95,24 @@ const makeGame = async () => {
             boatShots = []
             boat.cells.forEach(boatCell => boatShots.push(boatCell.shot))
             boatShots.sort()
-            boatShots.forEach((boatShot, c) => eCreator(`td`, `bc-${p}-${b}-${c}`, (boatShot != game.round ? boatShot : null ), boatRow))
+            boatShots.forEach((boatShot, c) => eCreator(`td`, `bc-${p}-${b}-${c}`, (boatShot != game.round ? boatShot : null), boatRow))
         })
     })
 }
 
-makeGame()
+const getPlayerId = async () => {
+    const ip = await axios.get('https://api.ipify.org?format=json')
+    return ip.data.ip
+
+}
+
+const socket = io(window.location.origin)
+
+socket.on('connect', () => {
+    localStorage[socket.id] = ``
+    console.log(`Connected as ${socket.id}`)
+})
+
+const playerID = getPlayerId ()
+
+buildGame(playerID)

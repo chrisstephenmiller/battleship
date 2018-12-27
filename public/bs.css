@@ -1,27 +1,41 @@
 body {
     font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    background-color: rgb(31, 0, 71);
 }
 
-.boat {
-    background-color: rgb(182, 35, 35)
+#boats {
+    background-color: rgba(65, 35, 18, 0.623);
 }
 
 th, td {
     white-space: pre-wrap;
     border: 1px solid black;
+    box-shadow: 2px 2px 2px black;
+    color: #ffc900;
+    text-shadow: 1px 1px 1px black;
+    background-color:#636363;
     width: 20px;
     height: 20px;
     text-align: center;
+}
+
+th {
+    color: rgb(0, 183, 255);
 }
 
 span {
     white-space: pre-wrap;
     font-weight: bold;
     margin: 5px;
+    color: rgb(0, 183, 255);
+    text-shadow: 1px 1px 1px black;
 }
 
 #game {
     display: inline-flex;
+    background-color: #454679;
+    box-shadow: 2px 2px 2px black;
 }
 
 div {
@@ -31,5 +45,6 @@ div {
 }
 
 .current-player {
-    color: blue
+    color:#ffc900;
+    text-shadow: 2px 2px 2px rgb(0, 50, 70);
 }

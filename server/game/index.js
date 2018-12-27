@@ -1,9 +1,14 @@
 
 const router = require('express').Router()
-const game = require('./game').game
-const fs = require('fs')
 
-const loadGame = () => JSON.parse(fs.readFileSync('server/game/games/game.json'))
+const Game = require('./game')
+const game = new Game(15, `chris`, `john`, `lee`)
+game.players.forEach(player => game.placeRandomBoats(player))
+
+const fs = require('fs')
+fs.writeFileSync(`../game.json`, JSON.stringify(game))
+
+const loadGame = () => JSON.parse(fs.readFileSync('../game.json'))
 
 const updateGame = cell => {
   const data = loadGame()
@@ -12,13 +17,16 @@ const updateGame = cell => {
   game.currentPlayer = data.currentPlayer
   game.round = data.round
   const turn = game.placeShot(cell)
-  fs.writeFileSync(`server/game/games/game.json`, JSON.stringify(game))
-  return {game, turn}
+  fs.writeFileSync(`../game.json`, JSON.stringify(game))
+  return { game, turn }
 }
 
 router.get(`/`, (req, res) => res.send(loadGame()))
 
-router.put(`/`, (req, res, next) => res.send(updateGame(req.body)))
+router.put(`/`, (req, res, next) => {
+  console.log(req)
+  res.send(updateGame(req.body))
+})
 
 router.use((req, res, next) => {
   const error = new Error('Not Found')
