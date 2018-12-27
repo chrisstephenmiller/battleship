@@ -1,94 +1,103 @@
-class Game {
-    constructor(size) {
-        this.grid = Array(size).fill(null).map((_, x) => Array(size).fill(null).map((_, y) => new Cell(x, y)))
-        this.round = 1
-        this.currentPlayer = 0
-        this.players = [...arguments].slice(1).map(name => new Player(name, this))
-        // alert(`${this.players[this.currentPlayer].name}'s turn!`)
+const makeGame = async () => {
+    const gameData = await axios.get(`game`)
+    const game = gameData.data
+    console.log(game)
+
+    letters = [`A`, `B`, `C`, `D`, `E`, `F`, `G`, `H`, `I`, `J`, `K`, `L`, `M`, `N`, `O`, `P`, `Q`, `R`, `S`, `T`, `U`, `V`, `W`, `X`, `Y`, `Z`]
+    row_id = x => letters[x].toLowerCase()
+
+    eCreator = (element, id, html, parent) => {
+        const e = document.createElement(element)
+        e.setAttribute(`id`, id)
+        e.innerHTML = html
+        parent.appendChild(e)
+        return e
     }
 
-    placeShot(cell) {
-        return this.players[this.currentPlayer].placeShot(cell)
-    }
-}
+    // for grid
+    const grid = document.getElementById(`grid`)
+    const numberRow = document.getElementById(`nums`)
 
-class Player {
-    constructor(name, game) {
-        this.name = name
-        this.boats = [
-            new Boat(5),    
-            new Boat(3),
-            new Boat(2),
-            new Boat(2)
-        ]
-        this.game = game
-        this.grid = game.grid
-        this.shots = this.boats.reduce((total, boat) => total += Math.min(this.boats.length - 1, boat.cells.length - 1), 0)
-    }
+    // column (numbers) headers
+    game.grid.forEach((row, i) => {
+        eCreator(`th`, `num-${i}`, i, numberRow)
+        if (i === game.grid.length - 1) { eCreator(`th`, `num-${i + 1}`, i + 1, numberRow) }
+    })
 
-    randomCells() {
-        const l = this.grid.length
-        const x = Math.floor(Math.random() * l)
-        const y = Math.floor(Math.random() * l)
-        const c = () => Math.floor(Math.random() * 2) === 1
-        const n = c()
-        const dir = z => z <= l / 2 ? z + 1 : z - 1
-        return [this.grid[x][y], this.grid[n && c() ? x : dir(x)][!n && c() ? y : dir(y)]]
-    }
+    game.grid.forEach((row, y) => {
+        // grid rows
+        const gridRow = eCreator(`tr`, `row-${row_id(y)}`, null, grid)
 
-    placeShot(cell) {
-        if (cell.shot) return true
-        cell.placeShot(this.game.round)
-        if (this.shots > 1) {
-            console.log(this.game)
-            this.shots--
-            return true
-        }
-        else {
-            game.players.forEach(player => {
-                player.shots = 0
-                player.boats.forEach(boat => {if (!boat.cells.every(cell => cell.shot)) { player.shots += Math.min(this.boats.length - 1, boat.cells.length - 1) }})
+        // row (letters) headers
+        eCreator(`th`, `let-${row_id(y)}`, letters[y], gridRow)
+
+        row.forEach((cell, x) => {
+            // grid cells
+            const gridShot = cell.shot ? cell.shot : null
+            const gridCell = eCreator(`td`, `cell-${row_id(y)}-${x + 1}`, gridShot, gridRow)
+            // place shot
+            gridCell.addEventListener(`click`, async () => {
+                // turn shots
+                console.log(cell.shot)
+                if (cell.shot) return
+                const shot = await axios.put(`game/`, cell)
+                gridCell.innerHTML = shot.data.shot
+                game.grid[cell.x][cell.y].shot = shot.data.shot
+                // end of turn
+                if (!shot.data.turn) {
+                    game.players.forEach((player, p) => {
+                        player.boats.forEach((boat, b) => {
+                            boatShots = []
+                            boat.cells.forEach(boatCell => {
+                                boatCell.shot = game.grid[boatCell.x][boatCell.y].shot
+                                if (boatCell.shot) boatShots.push(boatCell.shot)
+                            })
+                            boatShots.sort()
+                            console.log(boatShots)
+                            boatShots.forEach((boatShot, s) => document.getElementById(`bc-${p}-${b}-${s}`).innerHTML = boatShot)
+                        })
+                        document.getElementById(`pn-${p}`).innerHTML = `${player.name} - ${player.shots}`
+                    })
+                }
             })
-            this.game.round++
-            this.game.currentPlayer++
-            this.game.currentPlayer %= game.players.length
-            return false
+        })
+    })
+
+    // for players
+    game.players.forEach((player, p) => {
+        // boats element
+        const boats = document.getElementById(`boats`)
+        // player names
+        eCreator(`span`, `pn-${p}`, `${player.name} - ${player.shots}`, boats)
+        // boat tables
+        const boatTable = eCreator(`table`, `bt-${p}`, null, boats)
+
+        // boat reveal
+        for (let i = 0; i < 2; i++) {
+            boatTable.addEventListener([`mousedown`, `mouseup`][i], () => {
+                // limit to active player
+                // if (event.target.id.split(`-`)[1] == game.currentPlayer) {
+                player.boats.forEach(boat => boat.cells.forEach(cell => {
+                    const boatCell = document.getElementById(`cell-${row_id(cell.x)}-${cell.y + 1}`)
+                    i === 0 ? boatCell.classList.add(`boat`) : boatCell.classList.remove(`boat`)
+                }))
+                // }
+            })
         }
-    }
 
-    placeBoat(boat, cellA, cellB) {
-        const ints = (x, y) => {
-            const ints = []
-            for (let i = 0; i < boat.cells.length; i++) { ints.push(x === y ? x : x > y ? x - i : x + i) }
-            return ints
-        }
-        const intsX = ints(cellA.x, cellB.x)
-        const intsY = ints(cellA.y, cellB.y)
-        for (let i = 0; i < boat.cells.length; i++) { boat.cells[i] = this.grid[intsX[i]][intsY[i]] }
-    }
 
-    placeBoats() {
-        this.boats.forEach(boat => this.placeBoat(boat, ...this.randomCells()))
-    }
-
+        // for player boats
+        player.boats.forEach((boat, b) => {
+            // boat rows
+            const boatRow = eCreator(`tr`, `br-${p}-${b}`, null, boatTable)
+            boatShots = []
+            boat.cells.forEach(boatCell => {
+                boatShots.push(boatCell.shot)
+            })
+            boatShots.sort()
+            boatShots.forEach((boatShot, c) => eCreator(`td`, `bc-${p}-${b}-${c}`, boatShot, boatRow))
+        })
+    })
 }
 
-class Cell {
-    constructor(x, y) {
-        this.x = x
-        this.y = y
-        this.shot = null
-    }
-
-    placeShot(shot) {
-        if (!this.shot) this.shot = shot
-    }
-}
-
-class Boat {
-    constructor(length) {
-        this.cells = Array(length).fill(null)
-    }
-}
-
-const game = new Game(15, `peter`, `chris`, `john`)
+makeGame()
