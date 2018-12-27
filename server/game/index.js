@@ -13,7 +13,7 @@ const updateGame = cell => {
   game.round = data.round
   const turn = game.placeShot(cell)
   fs.writeFileSync(`server/game/games/game.json`, JSON.stringify(game))
-  return {shot: data.round, turn: turn}
+  return {game, turn}
 }
 
 router.get(`/`, (req, res) => res.send(loadGame()))

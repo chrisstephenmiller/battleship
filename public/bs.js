@@ -1,7 +1,6 @@
 const makeGame = async () => {
     const gameData = await axios.get(`game`)
     const game = gameData.data
-    console.log(game)
 
     letters = [`A`, `B`, `C`, `D`, `E`, `F`, `G`, `H`, `I`, `J`, `K`, `L`, `M`, `N`, `O`, `P`, `Q`, `R`, `S`, `T`, `U`, `V`, `W`, `X`, `Y`, `Z`]
     row_id = x => letters[x].toLowerCase()
@@ -33,31 +32,25 @@ const makeGame = async () => {
 
         row.forEach((cell, x) => {
             // grid cells
-            const gridShot = cell.shot ? cell.shot : null
-            const gridCell = eCreator(`td`, `cell-${row_id(y)}-${x + 1}`, gridShot, gridRow)
+            const gridCell = eCreator(`td`, `cell-${row_id(y)}-${x + 1}`, (cell.shot ? cell.shot : null), gridRow)
             // place shot
             gridCell.addEventListener(`click`, async () => {
                 // turn shots
-                console.log(cell.shot)
                 if (cell.shot) return
-                const shot = await axios.put(`game/`, cell)
-                gridCell.innerHTML = shot.data.shot
-                game.grid[cell.x][cell.y].shot = shot.data.shot
+                const gameTurn = await axios.put(`game/`, cell)
+                const { game, turn } = gameTurn.data
+                if (turn) {
+                    gridCell.innerHTML = game.round
+                }
                 // end of turn
-                if (!shot.data.turn) {
-                    game.players.forEach((player, p) => {
-                        player.boats.forEach((boat, b) => {
-                            boatShots = []
-                            boat.cells.forEach(boatCell => {
-                                boatCell.shot = game.grid[boatCell.x][boatCell.y].shot
-                                if (boatCell.shot) boatShots.push(boatCell.shot)
-                            })
-                            boatShots.sort()
-                            console.log(boatShots)
-                            boatShots.forEach((boatShot, s) => document.getElementById(`bc-${p}-${b}-${s}`).innerHTML = boatShot)
-                        })
-                        document.getElementById(`pn-${p}`).innerHTML = `${player.name} - ${player.shots}`
-                    })
+                else {
+                    gridCell.innerHTML = game.round - 1
+                    game.players.forEach((player, p) => player.boats.forEach((boat, b) => {
+                        boatShots = []
+                        boat.cells.forEach(boatCell => boatShots.push(boatCell.shot))
+                        boatShots.sort()
+                        boatShots.forEach((boatShot, c) => document.getElementById(`bc-${p}-${b}-${c}`).innerHTML = boatShot)
+                    }))
                 }
             })
         })
@@ -85,17 +78,14 @@ const makeGame = async () => {
             })
         }
 
-
         // for player boats
         player.boats.forEach((boat, b) => {
             // boat rows
             const boatRow = eCreator(`tr`, `br-${p}-${b}`, null, boatTable)
             boatShots = []
-            boat.cells.forEach(boatCell => {
-                boatShots.push(boatCell.shot)
-            })
+            boat.cells.forEach(boatCell => boatShots.push(boatCell.shot))
             boatShots.sort()
-            boatShots.forEach((boatShot, c) => eCreator(`td`, `bc-${p}-${b}-${c}`, boatShot, boatRow))
+            boatShots.forEach((boatShot, c) => eCreator(`td`, `bc-${p}-${b}-${c}`, (boatShot != game.round ? boatShot : null ), boatRow))
         })
     })
 }
