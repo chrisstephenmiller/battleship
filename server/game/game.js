@@ -7,6 +7,7 @@ class Game {
     }
 
     placeShot(cell) {
+        if (!cell) return
         const gridCell = this.grid[cell.x][cell.y]
         if (gridCell.shot) return true
         else {
@@ -65,6 +66,7 @@ class Player {
             new Boat(2)
         ]
         this.shots = this.boats.reduce((total, boat) => total += Math.min(this.boats.length - 1, boat.cells.length - 1), 0)
+        this.ids = []
     }
 }
 

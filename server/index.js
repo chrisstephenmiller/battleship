@@ -21,7 +21,7 @@ const createApp = () => {
   app.use(compression())
 
   // api routes
-  app.use('/game', require('./game'))
+  app.use('/game', require('./game').router)
 
   // static file-serving middleware
   app.use(express.static(path.join(__dirname, '..', 'public')))

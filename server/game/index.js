@@ -1,8 +1,15 @@
-
 const router = require('express').Router()
 
+
 const Game = require('./game')
-const game = new Game(15, `chris`, `john`, `lee`)
+const game = new Game(10, `chris`, `lee`)
+
+const getPlayerId = playerId => {
+  const clickedPlayer = game.players[playerId.p]
+  !game.players.some(player => player.ids.includes(playerId.id)) && clickedPlayer.ids.push(playerId.id)
+  fs.writeFileSync(`../game.json`, JSON.stringify(game))
+}
+
 game.players.forEach(player => game.placeRandomBoats(player))
 
 const fs = require('fs')
@@ -23,10 +30,7 @@ const updateGame = cell => {
 
 router.get(`/`, (req, res) => res.send(loadGame()))
 
-router.put(`/`, (req, res, next) => {
-  console.log(req)
-  res.send(updateGame(req.body))
-})
+router.put(`/`, (req, res, next) => res.send(updateGame(req.body)))
 
 router.use((req, res, next) => {
   const error = new Error('Not Found')
@@ -34,4 +38,4 @@ router.use((req, res, next) => {
   next(error)
 })
 
-module.exports = router
+module.exports = { router, getPlayerId }

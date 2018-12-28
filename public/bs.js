@@ -1,6 +1,20 @@
-const buildGame = async playerID => {
+const socket = io(window.location.origin)
+
+const buildGame = async () => {
+
     const gameData = await axios.get(`game`)
     const game = gameData.data
+    let thisDevice
+    game.players.forEach(async (player, p) => {
+        const previousConncetion = player.ids.filter(value => -1 !== Object.keys(localStorage).indexOf(value)).length > 0
+        console.log(previousConncetion)
+        if (previousConncetion) {
+            thisDevice = player.name
+            await socket.emit(`playerId`, {p, id: socket.id})
+            localStorage[socket.id] = ``
+        }
+    })
+    console.log(thisDevice)
 
     letters = [`A`, `B`, `C`, `D`, `E`, `F`, `G`, `H`, `I`, `J`, `K`, `L`, `M`, `N`, `O`, `P`, `Q`, `R`, `S`, `T`, `U`, `V`, `W`, `X`, `Y`, `Z`]
     row_id = x => letters[x].toLowerCase()
@@ -23,29 +37,29 @@ const buildGame = async playerID => {
         i === game.grid.length - 1 && eCreator(`th`, `num-${i + 1}`, i + 1, numberRow)
     })
 
-    game.grid.forEach((row, y) => {
+    game.grid.forEach((row, y) => { 
         // grid rows
         const gridRow = eCreator(`tr`, `row-${row_id(y)}`, null, grid)
-
+        
         // row (letters) headers
         eCreator(`th`, `let-${row_id(y)}`, letters[y], gridRow)
-
+        
         row.forEach((cell, x) => {
             // grid cells
             const gridCell = eCreator(`td`, `cell-${row_id(y)}-${x + 1}`, (cell.shot ? cell.shot : null), gridRow)
             // place shot
             gridCell.addEventListener(`click`, async () => {
                 // turn shots
-                if (cell.shot) return
+                const gameData = await axios.get(`game`)
+                const currentPlayer = gameData.data.players[gameData.data.currentPlayer]
+                if (cell.shot || thisDevice !== currentPlayer.name) return
                 const gameTurn = await axios.put(`game/`, cell)
                 const { game, turn } = gameTurn.data
-                const currentPlayer = game.players[game.currentPlayer]
                 const currentPlayerName = document.getElementById(`pn-${game.currentPlayer}`)
                 currentPlayerName.innerHTML = `${currentPlayer.name} - ${currentPlayer.shots}`
                 if (turn) !gridCell.innerHTML && (gridCell.innerHTML = game.round)
                 // end of turn
                 else {
-                    // currentPlayerName.innerHTML = `${currentPlayer.name} - ${currentPlayer.shots}`
                     gridCell.innerHTML = game.round - 1
                     game.players.forEach((player, p) => {
                         const playerName = document.getElementById(`pn-${p}`)
@@ -71,6 +85,10 @@ const buildGame = async playerID => {
         const boats = document.getElementById(`boats`)
         // player names
         const playerName = eCreator(`span`, `pn-${p}`, `${player.name} - ${player.shots}`, boats)
+        playerName.addEventListener(`click`, () => {
+            socket.emit(`playerId`, {p, id: socket.id})
+            localStorage[socket.id] = ``
+        })
         // boat tables
         const boatTable = eCreator(`table`, `bt-${p}`, null, boats)
         p === game.currentPlayer && playerName.classList.add(`current-player`)
@@ -100,19 +118,4 @@ const buildGame = async playerID => {
     })
 }
 
-const getPlayerId = async () => {
-    const ip = await axios.get('https://api.ipify.org?format=json')
-    return ip.data.ip
-
-}
-
-const socket = io(window.location.origin)
-
-socket.on('connect', () => {
-    localStorage[socket.id] = ``
-    console.log(`Connected as ${socket.id}`)
-})
-
-const playerID = getPlayerId ()
-
-buildGame(playerID)
+buildGame()
