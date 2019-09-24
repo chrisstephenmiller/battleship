@@ -2,7 +2,7 @@ const router = require('express').Router()
 
 
 const Game = require('./game')
-const game = new Game(10, `chris`, `lee`)
+const game = new Game(10, `chris`, `justin`)
 
 const getPlayerId = playerId => {
   const clickedPlayer = game.players[playerId.p]
@@ -23,6 +23,7 @@ const updateGame = cell => {
   game.players = data.players
   game.currentPlayer = data.currentPlayer
   game.round = data.round
+  if (!cell) return
   const turn = game.placeShot(cell)
   fs.writeFileSync(`../game.json`, JSON.stringify(game))
   return { game, turn }

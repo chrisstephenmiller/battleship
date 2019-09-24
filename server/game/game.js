@@ -7,7 +7,7 @@ class Game {
     }
 
     placeShot(cell) {
-        if (!cell) return
+        if (!cell.x) return
         const gridCell = this.grid[cell.x][cell.y]
         if (gridCell.shot) return true
         else {

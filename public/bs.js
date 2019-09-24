@@ -2,19 +2,24 @@ const socket = io(window.location.origin)
 
 const buildGame = async () => {
 
+ 
+
     const gameData = await axios.get(`game`)
     const game = gameData.data
     let thisDevice
     game.players.forEach(async (player, p) => {
         const previousConncetion = player.ids.filter(value => -1 !== Object.keys(localStorage).indexOf(value)).length > 0
-        console.log(previousConncetion)
         if (previousConncetion) {
             thisDevice = player.name
-            await socket.emit(`playerId`, {p, id: socket.id})
+            await socket.emit(`playerId`, { p, id: socket.id })
             localStorage[socket.id] = ``
         }
     })
-    console.log(thisDevice)
+
+    socket.on(`updateIn`, async () => {
+        console.log(thisDevice, game.players[game.currentPlayer].name)
+        if (thisDevice != game.players[game.currentPlayer].name) location.reload()
+    })
 
     letters = [`A`, `B`, `C`, `D`, `E`, `F`, `G`, `H`, `I`, `J`, `K`, `L`, `M`, `N`, `O`, `P`, `Q`, `R`, `S`, `T`, `U`, `V`, `W`, `X`, `Y`, `Z`]
     row_id = x => letters[x].toLowerCase()
@@ -37,13 +42,13 @@ const buildGame = async () => {
         i === game.grid.length - 1 && eCreator(`th`, `num-${i + 1}`, i + 1, numberRow)
     })
 
-    game.grid.forEach((row, y) => { 
+    game.grid.forEach((row, y) => {
         // grid rows
         const gridRow = eCreator(`tr`, `row-${row_id(y)}`, null, grid)
-        
+
         // row (letters) headers
         eCreator(`th`, `let-${row_id(y)}`, letters[y], gridRow)
-        
+
         row.forEach((cell, x) => {
             // grid cells
             const gridCell = eCreator(`td`, `cell-${row_id(y)}-${x + 1}`, (cell.shot ? cell.shot : null), gridRow)
@@ -75,6 +80,7 @@ const buildGame = async () => {
                         })
                     })
                 }
+                socket.emit(`updateOut`)
             })
         })
     })
@@ -86,25 +92,17 @@ const buildGame = async () => {
         // player names
         const playerName = eCreator(`span`, `pn-${p}`, `${player.name} - ${player.shots}`, boats)
         playerName.addEventListener(`click`, () => {
-            socket.emit(`playerId`, {p, id: socket.id})
+            socket.emit(`playerId`, { p, id: socket.id })
             localStorage[socket.id] = ``
+            !thisDevice && location.reload()
         })
         // boat tables
         const boatTable = eCreator(`table`, `bt-${p}`, null, boats)
         p === game.currentPlayer && playerName.classList.add(`current-player`)
-
-        // boat reveal
-        for (let i = 0; i < 3; i++) {
-            boatTable.addEventListener([`mousedown`, `mouseup`, `touchstart`, `touchend`][i], () => {
-                // limit to active player
-                // if (event.target.id.split(`-`)[1] == game.currentPlayer) {
-                player.boats.forEach(boat => boat.cells.forEach(cell => {
-                    const boatCell = document.getElementById(`cell-${row_id(cell.x)}-${cell.y + 1}`)
-                    i === 0 || i === 2 ? boatCell.classList.add(`boat`) : boatCell.classList.remove(`boat`)
-                }))
-                // }
-            })
-        }
+        player.boats.forEach(boat => boat.cells.forEach(cell => {
+            const boatCell = document.getElementById(`cell-${row_id(cell.x)}-${cell.y + 1}`)
+            thisDevice === player.name && boatCell.classList.add(`boat`)
+        }))
 
         // for player boats
         player.boats.forEach((boat, b) => {

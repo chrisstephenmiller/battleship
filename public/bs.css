@@ -32,6 +32,10 @@ th {
     color: rgb(0, 183, 255);
 }
 
+table {
+    margin: 5px;
+}
+
 span {
     white-space: pre-wrap;
     font-weight: bold;
